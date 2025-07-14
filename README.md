@@ -17,13 +17,13 @@ This MVP is built to be:
 * **Modern:** Leveraging best practices in web development for performance and maintainability.
 
 * **AI-aided extensions** – dynamic pricing, auto-comms, housekeeping scheduling.
-* **Dev-velocity showcase** – the entire MVP (code you are reading) was scaffolded by an AI assistant to illustrate how quickly a serious competitor could materialise.
+* **Dev-velocity showcase** – the entire MVP (code you are reading) was scaffolded by SuperGrok and Gemini to illustrate how quickly a serious competitor could materialise.
 
 ---
 
 ## 2  Why This Tech Stack?
 
-The technologies for VoyAI were chosen to maximize developer productivity, ensure type safety, and deliver high performance.
+The technologies for VoyAI were chosen to deliver stability and scale on lightweight hardware, while giving performance at high concurrency.
 
 ### ### Backend: Node.js, Express.js & Prisma
 
