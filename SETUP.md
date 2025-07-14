@@ -1,185 +1,163 @@
 # VPS Deployment Guide for VoyAI
 
-This guide provides step-by-step instructions to deploy the VoyAI application on a standard Linux VPS (e.g., Ubuntu 22.04).
+This guide provides step-by-step instructions to deploy the VoyAI application on a standard Linux VPS (e.g., Ubuntu 22.04). Assumes corrected structure (backend/ contains all server files).
 
-**Prerequisites:**
-*   A VPS with root or sudo access.
-*   A domain name pointed at your VPS's IP address (optional, for HTTPS).
-*   All the project files (`backend`, `frontend`, `database.sql`) ready to be uploaded.
+**Prerequisites**:
+- A VPS with root or sudo access.
+- A domain name pointed at your VPS's IP address (recommended for HTTPS).
+- All project files (backend/, frontend/, database.sql) uploaded (e.g., via git or scp).
 
 ---
 
 ### Step 1: Initial Server Setup
 
-Connect to your VPS via SSH.
-
+## Connect to your VPS via SSH:
 ssh root@your_vps_ip
 
-First, update your server's package lists.
-
+## Update packages:
 sudo apt update && sudo apt upgrade -y
 
-Step 2: Install Dependencies (Node.js, PostgreSQL, Nginx)
-Install Node.js (v20):
-We'll use NodeSource to get a modern version of Node.js.
+### Step 2: Install Dependencies (Node.js, PostgreSQL, Nginx)
 
+##Install Node.js (v20):
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-Install PostgreSQL:
-
+##Install PostgreSQL:
 sudo apt install -y postgresql postgresql-contrib
 
-Install Nginx (Web Server):
-Nginx will act as a reverse proxy, directing traffic to our backend and serving the frontend.
-
+##Install Nginx (for reverse proxy):
 sudo apt install -y nginx
 
-Step 3: Set Up the PostgreSQL Database
-Start and enable PostgreSQL:
 
+### Step 3: Set Up the PostgreSQL Database
+
+##Start and enable PostgreSQL:
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
 
-Create the database and user:
-Log in to the default postgres user.
-
+##Create user and DB:
 sudo -u postgres psql
 
-Inside the PostgreSQL prompt, run these commands:
-
--- Create a dedicated user for your app (use a strong password!)
+##In psql:
 CREATE USER voyai_user WITH PASSWORD 'your_strong_password_here';
-
--- Create the database
 CREATE DATABASE voyai;
-
--- Grant all privileges on the new database to your new user
 GRANT ALL PRIVILEGES ON DATABASE voyai TO voyai_user;
-
--- Exit the psql prompt
 \q
 
-Import the schema:
-Upload the database.sql file to your VPS (e.g., using scp). Then, from your regular shell, run:
+##Import schema (upload database.sql first):
+psql -U voyai_user -d voyai -h localhost -f /path/to/database.sql
 
-psql -U voyai_user -d voyai -h localhost -f path/to/your/database.sql
+### Step 4: Deploy the Backend
 
-You will be prompted for the password you created.
-Step 4: Deploy the Backend
-Upload Files:
-Upload the entire backend directory to your VPS (e.g., into /home/user/voyai/backend).
-Install Dependencies:
-Navigate to the backend directory and install the packages.
+Upload backend/ to /home/user/voyai/backend.
 
-cd /path/to/your/backend
+#Install deps:
+cd /path/to/backend
 npm install
 
-
-Configure Environment:
-Create the .env file.
-
+#Configure .env`:
 nano .env
 
-Add the following content, replacing the placeholders. Crucially, use localhost for the database host.
+#Content:
 
 DATABASE_URL=postgresql://voyai_user:your_strong_password_here@localhost:5432/voyai
-PORT=5000
-JWT_SECRET=generate_a_very_long_random_secret_string_here
+PORT=5000  # Changed to avoid conflicts; update if needed
+JWT_SECRET=your_long_random_string
 SIM_MODE=true
-# Add real API keys if you want to use them
 BOOKING_COM_API_KEY=
 AIRBNB_TOKEN=
 
-Run as a Service with PM2:
-PM2 is a process manager that will keep your Node.js app running forever and restart it if it crashes.
-
-sudo npm install pm2 -g
+#Run with PM2:
+sudo npm install -g pm2
 pm2 start index.js --name voyai-backend
-pm2 startup # Follow the instructions to enable on reboot
+pm2 startup  # Follow instructions
 pm2 save
-Use code with caution.
 
-Step 5: Deploy the Frontend
-Upload Files:
-Upload the entire frontend directory to your VPS (e.g., into /home/user/voyai/frontend).
-Update API Endpoint:
-In the frontend code, you must change the API URL from localhost to your server's domain or IP.
 
-cd /path/to/your/frontend
-nano src/api.js
+### Step 5: Deploy the Frontend
+Upload frontend/ to /path/to/frontend.
 
-Change http://localhost:5000/api to http://your_vps_ip:5000/api (or /api if using the Nginx proxy correctly). For the best setup, just use /api.
+Update API endpoint (for VPS):
+cd frontend/src
+nano api.js
 
-// src/api.js
-import axios from 'axios';
+#Change baseURL to '/api/' (relative for proxy).
 
-const api = axios.create({
-  baseURL: '/api', // Use a relative path for the proxy
-});
-// ... rest of the file
-
-Build the Static Files:
-
+#Build:
 npm install
-npm run build
+npm run build  # Creates dist/
 
-This creates a dist directory with optimized, static HTML, CSS, and JS files.
 
-##Step 6: Configure Nginx as a Reverse Proxy
-Create a new Nginx configuration file:
+### Step 6: Configure Nginx as a Reverse Proxy
 
+#Create config:
 sudo nano /etc/nginx/sites-available/voyai
 
 
-Paste the following configuration:
-This tells Nginx to serve the static frontend files and forward any requests starting with /api to your backend server running on port 5000.
-
+#Content:
 server {
-    listen 80;
-    server_name your_domain_or_ip; # e.g., voyai.example.com or your VPS IP
+listen 80;
+server_name your_domain_or_ip;
 
-    # Path to the built frontend files
-    root /path/to/your/frontend/dist;
-    index index.html;
+Serve frontend static files
+root /path/to/frontend/dist;
+index index.html;
 
-    location / {
-        # Fallback to index.html for single-page applications (React Router)
-        try_files $uri /index.html;
-    }
-
-    location /api/ {
-        # Forward API requests to the backend Node.js server
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
+location / {
+try_files $uri /index.html;
 }
 
-Enable the site and restart Nginx:
+location /api/ {
+proxy_pass http://localhost:5000;  # Match backend port
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection 'upgrade';
+proxy_set_header Host $host;
+proxy_cache_bypass $http_upgrade;
+}
+}
 
-# Link the config to make it active
+#Enable and restart:
 sudo ln -s /etc/nginx/sites-available/voyai /etc/nginx/sites-enabled/
-
-# Test for syntax errors
 sudo nginx -t
-
-# Restart Nginx to apply changes
 sudo systemctl restart nginx
 
-Your application should now be accessible at http://your_domain_or_ip.
-Obvious Troubleshooting Steps
-502 Bad Gateway Error: This usually means Nginx can't communicate with your backend.
-Check if the backend is running: pm2 status. If it has errored, check the logs: pm2 logs voyai-backend.
-Ensure the PORT in backend/.env is 5000 and matches the proxy_pass port in the Nginx config.
-Check your firewall. sudo ufw status. If active, ensure it allows traffic on port 5000.
-Frontend Loads but API Calls Fail (404 Not Found):
-Double-check the location /api/ block in your Nginx config. A missing trailing slash can cause issues.
-Ensure you updated the baseURL in frontend/src/api.js to be a relative path (/api).
-Database Connection Error (Backend Logs):
-Verify the DATABASE_URL in backend/.env is 100% correct (user, password, host, database name).
-Ensure PostgreSQL is running: sudo systemctl status postgresql.
-Check PostgreSQL's authentication methods in pg_hba.conf if you have connection issues from localhost. The default setup should work.
+
+For HTTPS: Install Certbot (`sudo apt install certbot python3-certbot-nginx`), run `sudo certbot --nginx`, update server to listen 443 with ssl_certificate paths.
+
+### Optional: Docker Deployment
+
+Add Docker for easier setup (alternative to manual).
+
+Create root/Dockerfile.yml (for docker-compose.yml):
+
+version: '3'
+services:
+db:
+image: postgres:14
+environment:
+POSTGRES_DB: voyai
+POSTGRES_USER: voyai_user
+POSTGRES_PASSWORD: your_password
+volumes:
+
+./database.sql:/docker-entrypoint-initdb.d/init.sql ports:
+"5432:5432" backend: build: ./backend command: npm start ports:
+"5000:5000" depends_on:
+db environment: DATABASE_URL: postgresql://voyai_user:your_password@db:5432/voyai frontend: build: ./frontend command: npm run build && serve -s dist ports:
+"3000:3000" depends_on:
+backend
+
+
+Run `docker-compose up`.
+
+### Troubleshooting
+
+- **502 Bad Gateway**: Check pm2 status/logs (`pm2 logs voyai-backend`). Ensure backend port matches Nginx proxy_pass.
+- **API Calls Fail (404)**: Verify /api/ location in Nginx (trailing slash important). Use relative baseURL in api.js.
+- **DB Connection Error**: Confirm DATABASE_URL (user/pass/host). Check `sudo systemctl status postgresql`. Edit /var/lib/postgresql/data/pg_hba.conf for local auth if needed (restart postgres).
+- **Frontend Loads But No Data**: Token expired—relogin. For guest page, add public endpoints.
+- **Channel Sync Fails**: In sim mode OK; for real, add keys and implement axios calls in channelService.js.
+- Firewall: `sudo ufw allow 80` (http), 443 (https), 5000 (backend if direct).
+

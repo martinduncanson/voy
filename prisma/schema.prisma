@@ -1,0 +1,49 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password_hash String
+  properties    Property[]
+}
+
+model Property {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  ownerId   Int
+  owner     User     @relation(fields: [ownerId], references: [id])
+  rooms     Room[]
+}
+
+model Room {
+  id          Int           @id @default(autoincrement())
+  propertyId  Int
+  name        String
+  type        String
+  capacity    Int
+  baseRate    Float
+  property    Property      @relation(fields: [propertyId], references: [id])
+  reservations Reservation[]
+}
+
+model Reservation {
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  guestName  String
+  checkIn    DateTime
+  checkOut   DateTime
+  status     String
+  channel    String?
+  room       Room     @relation(fields: [roomId], references: [id])
+}
+
+model ChannelSync {
+  id        Int      @id @default(autoincrement())
+  propertyId Int
+  channel   String
+  lastSync  DateTime
+}

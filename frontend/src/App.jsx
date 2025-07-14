@@ -1,46 +1,39 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import BookingPage from './pages/BookingPage';
-import { jwtDecode } from 'jwt-decode';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { QueryClient, QueryClientProvider } from 'react-query';
+import { I18nextProvider } from 'react-i18next';
+import io from 'socket.io-client';
+import store from './store';
+import i18n from './i18n';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+import GuestBooking from './pages/GuestBooking';
 
-const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
-  try {
-    // Optional: Check token expiration
-    const decoded = jwtDecode(token);
-    if (decoded.exp * 1000 < Date.now()) {
-      localStorage.removeItem('token');
-      return <Navigate to="/login" />;
-    }
-  } catch (e) {
-    localStorage.removeItem('token');
-    return <Navigate to="/login" />;
-  }
-  return children;
-};
+const socket = io('http://localhost:5000');
+
+const queryClient = new QueryClient();
 
 function App() {
+  React.useEffect(() => {
+    socket.on('syncUpdate', (data) => console.log('Sync:', data));
+    return () => socket.off('syncUpdate');
+  }, []);
+
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/book" element={<BookingPage />} />
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/dashboard" />} />
-    </Routes>
+    <Provider store={store}>
+      <QueryClientProvider client={queryClient}>
+        <I18nextProvider i18n={i18n}>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/booking" element={<GuestBooking />} /> {/* Public */}
+            </Routes>
+          </Router>
+        </I18nextProvider>
+      </QueryClientProvider>
+    </Provider>
   );
 }
 
