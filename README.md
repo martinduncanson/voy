@@ -1,4 +1,3 @@
-````markdown
 <!-- README.md -->
 
 # VoyAI (MVP) &nbsp;– A Sirvoy-Inspired, AI-Bootstrapped Property-Management System
@@ -174,5 +173,3 @@ Visit `http://localhost:3000`, register an admin account, and you’re in.
 * **TypeScript migration** – Prisma types shine even brighter when the rest of the codebase is typed.
 
 PRs welcome!
-
-````
