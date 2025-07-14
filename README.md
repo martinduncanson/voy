@@ -43,7 +43,7 @@ The technologies for VoyAI were chosen to maximize developer productivity, ensur
 
 ---
 
-## ## Architectural Advantages Over PHP
+## Architectural Advantages Over PHP
 
 While PHP is a capable language, this Node.js/React architecture offers several distinct advantages over a traditional monolithic PHP application (e.g., a LAMP stack):
 
