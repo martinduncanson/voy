@@ -28,22 +28,35 @@ model Room {
   baseRate    Float
   property    Property      @relation(fields: [propertyId], references: [id])
   reservations Reservation[]
+  housekeepingTasks HousekeepingTask[]
 }
 
 model Reservation {
   id         Int      @id @default(autoincrement())
   roomId     Int
   guestName  String
+  guestEmail String?
   checkIn    DateTime
   checkOut   DateTime
   status     String
   channel    String?
+  totalPrice Float?
   room       Room     @relation(fields: [roomId], references: [id])
 }
 
 model ChannelSync {
-  id        Int      @id @default(autoincrement())
-  propertyId Int
-  channel   String
-  lastSync  DateTime
+  id         Int      @id @default(autoincrement())
+  channel    String
+  lastSync   DateTime @default(now())
+  status     String
+  details    String?
+}
+
+model HousekeepingTask {
+  id               Int      @id @default(autoincrement())
+  roomId           Int
+  description      String
+  dueDate          DateTime
+  status           String   @default("pending")
+  room             Room     @relation(fields: [roomId], references: [id])
 }

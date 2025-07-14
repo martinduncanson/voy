@@ -1,18 +1,21 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const { RateLimiterMemory } = require('rate-limiter-flexible');
-const winston = require('winston');
-const { PrismaClient } = require('@prisma/client');
-const http = require('http');
-const socketIo = require('socket.io');
-const cron = require('node-cron');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
+import winston from 'winston';
+import { PrismaClient } from '@prisma/client';
+import http from 'http';
+import https from 'https'; // For HTTPS in prod
+import { Server } from 'socket.io';
+import cron from 'node-cron';
+import fs from 'fs'; // For HTTPS keys
 
-const authRoutes = require('./routes/auth');
-const propertiesRoutes = require('./routes/properties');
-const reservationsRoutes = require('./routes/reservations');
-const aiRoutes = require('./routes/ai');
-const reportsRoutes = require('./routes/reports');
+import authRoutes from './routes/auth.js';
+import propertiesRoutes from './routes/properties.js';
+import reservationsRoutes from './routes/reservations.js';
+import aiRoutes from './routes/ai.js';
+import reportsRoutes from './routes/reports.js';
+import { syncChannels } from './services/channelService.js';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -21,24 +24,16 @@ const logger = winston.createLogger({
 });
 
 const app = express();
-const server = http.createServer(app);
-const io = socketIo(server, { cors: { origin: '*' } });
-
 const prisma = new PrismaClient();
 
-const rateLimiter = new RateLimiterMemory({
-  points: 10,
-  duration: 1,
-});
+const rateLimiter = new RateLimiterMemory({ points: 10, duration: 1 });
 
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
-  rateLimiter.consume(req.ip)
-    .then(() => next())
-    .catch(() => res.status(429).send('Too Many Requests'));
+  rateLimiter.consume(req.ip).then(() => next()).catch(() => res.status(429).send('Too Many Requests'));
 });
 
 app.use('/api/auth', authRoutes);
@@ -47,15 +42,29 @@ app.use('/api/reservations', reservationsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/reports', reportsRoutes);
 
+// Server setup (HTTPS for prod, HTTP for dev)
+let server;
+if (process.env.NODE_ENV === 'production') {
+  const privateKey = fs.readFileSync('privkey.pem', 'utf8');
+  const certificate = fs.readFileSync('cert.pem', 'utf8');
+  const credentials = { key: privateKey, cert: certificate };
+  server = https.createServer(credentials, app);
+} else {
+  server = http.createServer(app);
+}
+
+const io = new Server(server, { cors: { origin: '*' } });
+
 io.on('connection', (socket) => {
   logger.info('User connected');
   socket.on('disconnect', () => logger.info('User disconnected'));
 });
 
-// Cron for channel sync (emit updates via socket)
+// Cron for channel sync
 cron.schedule('*/5 * * * *', async () => {
-  // Sync logic...
+  await syncChannels();
   io.emit('syncUpdate', { message: 'Channels synced' });
 });
 
-server.listen(5000, () => logger.info('Server running on port 5000'));
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
