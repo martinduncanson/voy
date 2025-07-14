@@ -17,7 +17,7 @@ This MVP is built to be:
 * **Modern:** Leveraging best practices in web development for performance and maintainability.
 
 * **AI-aided extensions** – dynamic pricing, auto-comms, housekeeping scheduling.
-* **Dev-velocity showcase** – the entire MVP (code you are reading) was scaffolded by SuperGrok and Gemini to illustrate how quickly a serious competitor could materialise.
+* **Dev-velocity showcase** – the entire MVP (code you are reading) was scaffolded by SuperGrok and Gemini using a small PRD and text prompt citing Sirvoy features pasted from the wesbite, to illustrate how quickly a serious competitor could be boostrapped and materialised. Total build time including PRD and prompt to final git was around 2 hours.
 
 ---
 
