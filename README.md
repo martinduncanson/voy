@@ -1,6 +1,6 @@
 <!-- README.md -->
 
-# VoyAI (MVP) &nbsp;– A Sirvoy-Inspired, AI-Bootstrapped Property-Management System
+# VoyAI (MVP) &nbsp;– A Sirvoy-Inspired, AI-Bootstrapped PMS
 
 > **TL;DR**  
 > VoyAI is a fully-functioning, cloud-native PMS prototype that proves how modern AI-assisted development can compress *months* of work into a few hours. It couples a **Node + Express + Prisma** service layer with a **Vite/React** UI, packaged for friction-free deployment via **Docker Compose** or a traditional **NGINX → PM2 stack**.
