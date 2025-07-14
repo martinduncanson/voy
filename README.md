@@ -57,7 +57,7 @@ While PHP is a capable language, this Node.js/React architecture offers several 
 
 ---
 
-## ## Ultra-lightweight Hardware Requirements
+## Ultra-lightweight Hardware Requirements
 
 On a single 8-core / 32 GB VPS you can safely serve ≈ 70 k – 135 k concurrent guests, depending on how chatty the front-end is, while keeping p99 API latency < 150 ms.
 
@@ -65,23 +65,23 @@ On a single 8-core / 32 GB VPS you can safely serve ≈ 70 k – 135 k concurren
 Live page pings availability every 10 s → 0.1 req/s/user (heavy, DB-hit).
 UI also holds a WebSocket but that is idle CPU-wise.
 
-13 500 req/s ÷ 0.1 req/s/user  ≈ 135 000 simultaneous guest users
-Add maybe 1 000 staff dashboards (heavier, ~1 req/s) and you are still under 80 % CPU.
+* 13 500 req/s ÷ 0.1 req/s/user  ≈ 135 000 simultaneous guest users. Add maybe 1 000 staff dashboards (heavier, ~1 req/s) and you are still under 80 % CPU.
 
-If you instead poll every 5 s (0.2 req/s/user) the same box sustains ≈ 67 500 guests.
+* If you instead poll every 5 s (0.2 req/s/user) the same box sustains ≈ 67 500 guests.
 
 ## Why this holds together
 
-Node throughput numbers
-Public benchmarks place an Express + Postgres hit at 2 400 – 2 800 req/s per vCPU on c6g instances. We used the conservative 2 600 figure and still shaved 35 % off for head-room.
+Node throughput numbers: 
+* Public benchmarks place an Express + Postgres hit at 2 400 – 2 800 req/s per vCPU on c6g instances. 
+* We used the conservative 2 600 figure and still shaved 35 % off for head-room.
 
-# Memory footprint
+## Memory footprint
 
-PostgreSQL: https://aws.amazon.com/blogs/database/analyze-your-postgresql-memory/ measures 1.5–14 MB per backend; we pool 80 connections (10 per worker) ⇒ ≤ 1 GB. Shared buffers at 25 % RAM (8 GB) gives excellent hit ratios for a dataset of ±10 M reservations.
-Node workers: 8 × (60 MB idle + 80 MB live heap) ≈ 1 GB.
-WebSocket objects: ≈ 2 KB each ⇒ 200 k users ≈ 400 MB JS side + ~800 MB kernel.
+**PostgreSQL:** https://aws.amazon.com/blogs/database/analyze-your-postgresql-memory/ measures 1.5–14 MB per backend; we pool 80 connections (10 per worker) ⇒ ≤ 1 GB. Shared buffers at 25 % RAM (8 GB) gives excellent hit ratios for a dataset of ±10 M reservations. 
+**Node workers:** 8 × (60 MB idle + 80 MB live heap) ≈ 1 GB. 
+**WebSocket objects:** ≈ 2 KB each ⇒ 200 k users ≈ 400 MB JS side + ~800 MB kernel. 
 
-# Single-box trade-offs
+## Single-box trade-offs
 
 Pros: zero network hops, simplest ops.
 Cons: you share CPU cache between Postgres and Node. Under Black-Friday-style spikes, DB checkpoints can jitter API latency. Vertical scaling up to 16 cores is painless, but beyond that, read-replica or pgBouncer split becomes cheaper.
@@ -103,9 +103,8 @@ Horizontal Node scaling – Because Prisma uses a connection pool per process, s
 * **Beyond 50 k guests** – Tests show Express is CPU-bound long before it’s memory-bound, so the upgrade path is linear: +1 core ≈ +2 500 req/s.
 
 With this sizing in place you can confidently add features without immediately racing for bigger metal—and that’s the real strength of the Node + Prisma stack.
+
 ---
-
-
 
 ## ## Key Features
 
