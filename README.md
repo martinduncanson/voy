@@ -23,7 +23,7 @@ This MVP is built to be:
 
 ## 2  Why This Tech Stack?
 
-The technologies for VoyAI were chosen to deliver stability and scale on lightweight hardware, while giving performance at high concurrency.
+The technologies for VoyAI were chosen to deliver stability and scale on low-cost lightweight hardware, while giving performance at high concurrency.
 
 ### ### Backend: Node.js, Express.js & Prisma
 
@@ -59,7 +59,7 @@ While PHP is a capable language, this Node.js/React architecture offers several 
 
 ## Ultra-lightweight Hardware Requirements
 
-On a single 8-core / 32 GB VPS you can safely serve ≈ 70 k – 135 k concurrent guests, depending on how chatty the front-end is, while keeping p99 API latency < 150 ms.
+On a single 8-core / 32 GB VPS (priced at $252/m from Digital Ocean) you can safely serve ≈ 70 k – 135 k concurrent guests, depending on how chatty the front-end is, while keeping p99 API latency < 150 ms.
 
 * **Back-of-envelope capacity translation:** We need to map “req/s” → “concurrent guests”. For a typical booking widget:
 Live page pings availability every 10 s → 0.1 req/s/user (heavy, DB-hit).
